@@ -22,9 +22,10 @@ find . -type f \( \
 echo "Найдено файлов: $(wc -l < all_files.txt)"
 
 # Генерируем команды
-> commands.txt  # Очищаем файл, если он существует
-> skipped.log
-> errors.log
+> commands.txt
+> skipped.txt
+> errors.txt
+> conversion.txt
 
 while read input_file; do
   # Убираем начальную ./ если есть
@@ -32,7 +33,7 @@ while read input_file; do
 
   # Проверка доступности файла
   if [ ! -r "$input_file" ]; then
-    echo "Ошибка доступа: $input_file" >> errors.log
+    echo "Ошибка доступа: $input_file" >> errors.txt
     continue
   fi
 
@@ -49,7 +50,7 @@ while read input_file; do
 
   # Пропуск существующих файлов
   if [ -f "$output_file" ]; then
-    echo "Пропускаем '$input_file' - уже существует в папке converted" >> skipped.log
+    echo "Пропускаем '$input_file' - уже существует в папке converted" >> skipped.txt
     continue
   fi
 
@@ -59,7 +60,7 @@ while read input_file; do
     continue
   fi
 
-  echo "ffmpeg -i \"$input_file\" -c:v libx265 -preset medium -crf 23 -c:a aac -b:a 192k -y -hide_banner -loglevel error \"$output_file\"" >> skipped.txt
+  echo "ffmpeg -i \"$input_file\" -c:v libx265 -preset medium -crf 23 -c:a aac -b:a 192k -y -hide_banner -loglevel error \"$output_file\"" >> commands.txt
 done < all_files.txt
 
 echo "Пропущенных файлов: $(wc -l < skipped.txt)"
@@ -68,12 +69,12 @@ echo "Сгенерировано команд: $(wc -l < commands.txt)"
 # Запуск с логированием ошибок
 if [ -s commands.txt ]; then
   echo "Запуск конвертации..."
-  parallel -j 4 --load 80% --joblog conversion.log --progress < commands.txt
+  parallel -j 4 --load 80% --joblog conversion.txt --progress < commands.txt
 fi
 
 echo "========================================"
 echo "Конвертация завершена!"
 echo "Файлы сохранены в папку: converted"
-echo "Логи ошибок: errors.log"
-echo "Лог пропущенных файлов: skipped.log"
-echo "Лог заданий: conversion.log"
+echo "Логи ошибок: errors.txt"
+echo "Лог пропущенных файлов: skipped.txt"
+echo "Лог заданий: conversion.txt"
